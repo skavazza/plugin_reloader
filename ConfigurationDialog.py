@@ -39,6 +39,8 @@ class ConfigurationDialog(QDialog, FORM_CLASS):
         if rpc := Settings.recentPluginsCount():
             self.sbRecentPluginsCount.setValue(rpc)
 
+        self.pushButton.clicked.connect(self.clearRecentPlugins)
+
         # DEPRECATED The plugin selector is deprecated and disabled.
         # Keep it for some time and remove completely!
         #
@@ -69,3 +71,9 @@ class ConfigurationDialog(QDialog, FORM_CLASS):
         Settings.setExtraCommands(self.pteExtraCommands.toPlainText())
         Settings.setRecentPluginsCount(self.sbRecentPluginsCount.value())
         super().accept()
+
+    def clearRecentPlugins(self):
+        """Clear the recently reloaded plugin list."""
+        Settings.clearRecentPlugins()
+        self.comboPlugin.clear()
+        self.comboPlugin.setEnabled(False)

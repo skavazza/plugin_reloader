@@ -13,7 +13,6 @@ the Free Software Foundation; either version 2 of the License, or
 
 import os
 import sys
-import shlex
 import subprocess
 from functools import partial
 from pathlib import Path
@@ -257,6 +256,21 @@ class Plugin:
                     for menu in (toolButtonMenu, self.menu):
                         menu.removeAction(self.actionForPlugin[plugin])
 
+            # If the recent plugins list was cleared, we need to refresh the menu
+            if not Settings.recentPlugins():
+                # Remove all recent plugin actions
+                for plugin, action in list(self.actionForPlugin.items()):
+                    if plugin is not None:
+                        toolButtonMenu = self.toolButton.menu()
+                        for menu in (toolButtonMenu, self.menu):
+                            menu.removeAction(action)
+                        self.actionForPlugin.pop(plugin)
+                # Update default action to None or a placeholder
+                self._default_plugin = None
+                self.actionReloadRecentPlugin.setIcon(QIcon(str(Path(__file__).parent / "reload.png")))
+                self.actionReloadRecentPlugin.setToolTip(self.tr("Reload recent plugin"))
+                self.toolButton.setText(self.tr("Reload recent plugin"))
+
     def reloadDefaultPlugin(self):
         """Reloads the default plugin."""
         if not self._default_plugin:
@@ -379,27 +393,19 @@ class Plugin:
 
         try:
             extraCommands = Settings.getExtraCommands()
-            if not extraCommands.strip():  # Prevent an empty command to be run
-                return True
-
-            path = plugin_installer.plugins.all()[plugin]['library']
-            extraCommands = extraCommands.replace('%PluginName%', plugin)
-            extraCommands = extraCommands.replace('%PluginPath%', path)
-
-            for line in extraCommands.splitlines():
-                cmd = line.strip()
-                cmd = cmd.rstrip(';')
-                if not cmd:
-                    continue
+            if extraCommands.strip():  # Prevent an empty command to be run
+                path = plugin_installer.plugins.all()[plugin]['library']
+                extraCommands = extraCommands.replace('%PluginName%', plugin)
+                extraCommands = extraCommands.replace('%PluginPath%', path)
 
                 completed_process = subprocess.run(
-                    shlex.split(cmd),
-                    text=True,
+                    extraCommands,
+                    shell=True,
                     capture_output=True,
                     check=True,
                 )
 
-                message = completed_process.stdout
+                message = completed_process.stdout.decode('utf-8', 'replace')
                 if message:
                     self.iface.messageBar().pushMessage(message, Qgis.Info)
 
@@ -407,9 +413,11 @@ class Plugin:
 
         except subprocess.CalledProcessError as exc:
             self.iface.messageBar().pushMessage(
-                self.tr('Could not execute extra commands: {}').format(exc.stderr),
+                self.tr('Could not execute extra commands: {}').format(
+                    exc.stderr.decode('utf-8', 'replace')),
                 Qgis.Warning
             )
             successExtraCommands = False
 
         return successExtraCommands
+

@@ -52,6 +52,11 @@ class Settings():
         QSettings().setValue(f'{cls.PREFIX}/recentPlugins', plugins)
 
     @classmethod
+    def clearRecentPlugins(cls):
+        """Clear the recently reloaded plugin list."""
+        QSettings().setValue(f'{cls.PREFIX}/recentPlugins', [])
+
+    @classmethod
     def notificationsEnabled(cls) -> bool:
         """Whether plugin reload confirmaion message is enabled."""
         return QSettings().value(f'{cls.PREFIX}/notify', True, type=bool)

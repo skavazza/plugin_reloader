@@ -1,9 +1,3 @@
-0.21
-Security fix: avoid using shell=True in subprocess
-
-0.20
-Fix QGIS4 compatibility.
-
 0.19
 Fix hang on plugin startup on QGIS 4. Patch by Nyall Dawson.
 
