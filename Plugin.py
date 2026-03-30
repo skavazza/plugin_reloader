@@ -74,6 +74,7 @@ class Plugin:
         """Add actions to the QGIS menu and toolbar."""
         icon = QIcon(str(Path(__file__).parent / "reload.png"))
         iconConf = QIcon(str(Path(__file__).parent / "reload-conf.png"))
+        iconClean = QIcon(str(Path(__file__).parent / "reload_clean.png"))
 
         self.menu = self.iface.pluginMenu().addMenu(icon, self.tr(
             "&Plugin Reloader"))
@@ -114,6 +115,10 @@ class Plugin:
         self.actionSettings = QAction(iconConf, self.tr("Configure"))
         self.actionSettings.triggered.connect(self.openConfigWindow)
 
+        # Create action for clearing recent plugins
+        self.actionClearRecent = QAction(iconClean, self.tr("Clear recent plugins"))
+        self.actionClearRecent.triggered.connect(self.clearRecentPlugins)
+
         # Add the actionReloadRecentPlugin to menu (to present its shortcut)
         # and set it to the tool buttton as the default action
         self.toolButton.setDefaultAction(self.actionReloadRecentPlugin)
@@ -134,6 +139,9 @@ class Plugin:
 
         toolButtonMenu.addSeparator()
         self.menu.addSeparator()
+
+        toolButtonMenu.addAction(self.actionClearRecent)
+        self.menu.addAction(self.actionClearRecent)
 
         toolButtonMenu.addAction(self.actionSettings)
         self.menu.addAction(self.actionSettings)
@@ -258,18 +266,27 @@ class Plugin:
 
             # If the recent plugins list was cleared, we need to refresh the menu
             if not Settings.recentPlugins():
-                # Remove all recent plugin actions
-                for plugin, action in list(self.actionForPlugin.items()):
-                    if plugin is not None:
-                        toolButtonMenu = self.toolButton.menu()
-                        for menu in (toolButtonMenu, self.menu):
-                            menu.removeAction(action)
-                        self.actionForPlugin.pop(plugin)
-                # Update default action to None or a placeholder
-                self._default_plugin = None
-                self.actionReloadRecentPlugin.setIcon(QIcon(str(Path(__file__).parent / "reload.png")))
-                self.actionReloadRecentPlugin.setToolTip(self.tr("Reload recent plugin"))
-                self.toolButton.setText(self.tr("Reload recent plugin"))
+                self._clearRecentPluginsFromMenu()
+
+    def clearRecentPlugins(self):
+        """Clear recent plugins from Settings and UI."""
+        Settings.clearRecentPlugins()
+        self._clearRecentPluginsFromMenu()
+
+    def _clearRecentPluginsFromMenu(self):
+        """Internal method to update UI after clearing recent plugins."""
+        # Remove all recent plugin actions
+        for plugin, action in list(self.actionForPlugin.items()):
+            if plugin is not None:
+                toolButtonMenu = self.toolButton.menu()
+                for menu in (toolButtonMenu, self.menu):
+                    menu.removeAction(action)
+                self.actionForPlugin.pop(plugin)
+        # Update default action to None or a placeholder
+        self._default_plugin = None
+        self.actionReloadRecentPlugin.setIcon(QIcon(str(Path(__file__).parent / "reload.png")))
+        self.actionReloadRecentPlugin.setToolTip(self.tr("Reload recent plugin"))
+        self.toolButton.setText(self.tr("Reload recent plugin"))
 
     def reloadDefaultPlugin(self):
         """Reloads the default plugin."""

@@ -13,10 +13,7 @@ the Free Software Foundation; either version 2 of the License, or
 
 import os
 from qgis.PyQt import uic
-from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QDialog, QWidget
-import qgis.utils
-from pyplugin_installer import installer as plugin_installer
 
 from .Settings import Settings
 
@@ -41,28 +38,6 @@ class ConfigurationDialog(QDialog, FORM_CLASS):
 
         self.pushButton.clicked.connect(self.clearRecentPlugins)
 
-        # DEPRECATED The plugin selector is deprecated and disabled.
-        # Keep it for some time and remove completely!
-        #
-        # Update the plugin list first! The plugin could be removed
-        # from the list if was temporarily broken.
-        # Still doesn't work in every case. TODO?: try to load from scratch
-        # the plugin saved in QSettings if doesn't exist
-        if len(plugin_installer.plugins.all()) == 0:
-            plugin_installer.plugins.rebuild()
-        qgis.utils.updateAvailablePlugins()
-        plugins_list = sorted(qgis.utils.plugins.keys())
-        for plugin in plugins_list:
-            try:
-                icon = QIcon(plugin_installer.plugins.all()[plugin]['icon'])
-            except KeyError:
-                icon = QIcon()
-            self.comboPlugin.addItem(icon, plugin)
-        if recentPlugins := Settings.recentPlugins():
-            plugin = recentPlugins[0]
-            if plugin in qgis.utils.plugins:
-                self.comboPlugin.setCurrentIndex(plugins_list.index(plugin))
-
     def accept(self):
         """Accept."""
         Settings.setToolButtonTextEnabled(self.cbToolButtonText.isChecked())
@@ -75,5 +50,3 @@ class ConfigurationDialog(QDialog, FORM_CLASS):
     def clearRecentPlugins(self):
         """Clear the recently reloaded plugin list."""
         Settings.clearRecentPlugins()
-        self.comboPlugin.clear()
-        self.comboPlugin.setEnabled(False)
